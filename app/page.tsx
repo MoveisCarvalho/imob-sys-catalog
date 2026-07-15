@@ -248,7 +248,7 @@ export default function LandingPage() {
                                             rel="noopener noreferrer"
                                             className="inline-flex items-center justify-center bg-slate-900 dark:bg-slate-800 hover:bg-amber-600 dark:hover:bg-amber-500 text-white px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-300 shadow-sm"
                                         >
-                                            Acessar Cartão Digital
+                                            Entrar em Contato
                                         </a>
                                     )}
                                 </div>
