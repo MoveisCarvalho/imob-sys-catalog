@@ -224,21 +224,22 @@ export default function LandingPage() {
                                 {/* Cabeçalho do Corretor */}
                                 <div className="border-b border-slate-100 dark:border-slate-800/80 pb-6 mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                                     <div>
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <span className="text-xs font-bold text-amber-600 dark:text-amber-500 uppercase tracking-widest">
-                                                Corretor Credenciado
-                                            </span>
+
+                                        <h2 className="text-3xl font-serif font-bold text-slate-900 dark:text-white">{group.tenantName}</h2>
+
+                                        {/* LINHA ÚNICA: CONTATO + CIDADE JUNTOS */}
+                                        <div className="flex flex-wrap items-center gap-2 mt-1 text-sm text-slate-500 dark:text-slate-400">
+                                            <span>Contato: {group.tenantPhone}</span>
                                             {group.tenantCity && (
                                                 <>
-                                                    <span className="text-slate-300 dark:text-slate-700 text-xs">•</span>
+                                                    <span className="text-slate-300 dark:text-slate-700 text-xs font-bold">•</span>
                                                     <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] px-2.5 py-0.5 rounded-full font-medium">
                                                         {group.tenantCity}
                                                     </span>
                                                 </>
                                             )}
                                         </div>
-                                        <h2 className="text-3xl font-serif font-bold text-slate-900 dark:text-white">{group.tenantName}</h2>
-                                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Contato Profissional: {group.tenantPhone}</p>
+
                                     </div>
                                     {group.tenantCardLink && (
                                         <a
@@ -277,13 +278,15 @@ export default function LandingPage() {
                                                                 <>
                                                                     <button
                                                                         onClick={(e) => handlePrevImage(offer._id, offer.images.length, e)}
-                                                                        className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/85 text-white w-9 h-9 rounded-full flex items-center justify-center text-sm transition"
+                                                                        className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/80 text-white w-9 h-9 rounded-full flex items-center justify-center text-lg transition shadow-lg backdrop-blur-sm border border-white/20 select-none"
+                                                                        style={{ filter: "drop-shadow(0px 2px 4px rgba(0,0,0,0.5))" }}
                                                                     >
                                                                         &#10094;
                                                                     </button>
                                                                     <button
                                                                         onClick={(e) => handleNextImage(offer._id, offer.images.length, e)}
-                                                                        className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/85 text-white w-9 h-9 rounded-full flex items-center justify-center text-sm transition"
+                                                                        className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/80 text-white w-9 h-9 rounded-full flex items-center justify-center text-lg transition shadow-lg backdrop-blur-sm border border-white/20 select-none"
+                                                                        style={{ filter: "drop-shadow(0px 2px 4px rgba(0,0,0,0.5))" }}
                                                                     >
                                                                         &#10095;
                                                                     </button>
@@ -343,7 +346,8 @@ export default function LandingPage() {
                     {modalImages.length > 1 && (
                         <button
                             onClick={() => setCurrentModalIndex(prev => prev === 0 ? modalImages.length - 1 : prev - 1)}
-                            className="absolute left-4 md:left-8 text-white hover:text-amber-400 text-5xl transition z-50"
+                            className="absolute left-4 md:left-8 text-white hover:text-amber-400 text-5xl transition z-50 select-none active:scale-95"
+                            style={{ filter: "drop-shadow(0px 4px 8px rgba(0, 0, 0, 0.9))" }}
                         >
                             &#10094;
                         </button>
@@ -360,7 +364,8 @@ export default function LandingPage() {
                     {modalImages.length > 1 && (
                         <button
                             onClick={() => setCurrentModalIndex(prev => prev === modalImages.length - 1 ? 0 : prev + 1)}
-                            className="absolute right-4 md:right-8 text-white hover:text-amber-400 text-5xl transition z-50"
+                            className="absolute right-4 md:right-8 text-white hover:text-amber-400 text-5xl transition z-50 select-none active:scale-95"
+                            style={{ filter: "drop-shadow(0px 4px 8px rgba(0, 0, 0, 0.9))" }}
                         >
                             &#10095;
                         </button>
