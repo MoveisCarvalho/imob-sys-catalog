@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 interface Offer {
     _id: string;
@@ -21,9 +21,16 @@ interface TenantGroup {
 export default function LandingPage() {
     const [catalog, setCatalog] = useState<TenantGroup[]>([]);
     const [search, setSearch] = useState('');
+
+    // Estados para controle da Cidade e Digitação Dinâmica
+    const [cityInput, setCityInput] = useState('');
     const [selectedCity, setSelectedCity] = useState('');
     const [availableCities, setAvailableCities] = useState<string[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [filteredCities, setFilteredCities] = useState<string[]>([]);
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    const [loading, setLoading] = useState(false);
 
     // Controle do Tema (Light / Dark)
     const [theme, setTheme] = useState<'light' | 'dark'>('light');
@@ -47,21 +54,53 @@ export default function LandingPage() {
         }
     }, []);
 
-    // Função para alternar o tema
-    const toggleTheme = () => {
-        if (theme === 'light') {
-            setTheme('dark');
-            document.documentElement.classList.add('dark');
-            localStorage.setItem('theme', 'dark');
-        } else {
-            setTheme('light');
-            document.documentElement.classList.remove('dark');
-            localStorage.setItem('theme', 'light');
-        }
-    };
-
-    // Monitora as alterações de busca e cidade
+    // Carrega a lista inicial de cidades ao montar o componente
     useEffect(() => {
+        const fetchInitialCities = async () => {
+            try {
+                const res = await fetch(`/api/catalog?search=&city=`);
+                const data = await res.json();
+                if (data && typeof data === 'object' && 'cities' in data && Array.isArray(data.cities)) {
+                    setAvailableCities(data.cities);
+                }
+            } catch (err) {
+                console.error("Erro ao carregar cidades iniciais:", err);
+            }
+        };
+        fetchInitialCities();
+    }, []);
+
+    // Fecha o dropdown de cidades ao clicar fora do componente
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsDropdownOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    // Filtra as cidades dinamicamente conforme a digitação do usuário
+    useEffect(() => {
+        if (cityInput.trim() === '') {
+            setFilteredCities(availableCities);
+        } else {
+            const filtered = availableCities.filter(city =>
+                city.toLowerCase().includes(cityInput.toLowerCase())
+            );
+            setFilteredCities(filtered);
+        }
+    }, [cityInput, availableCities]);
+
+    // Monitora as alterações de busca e cidade selecionada com Debounce
+    useEffect(() => {
+        // Só busca os registros se houver uma cidade selecionada de fato
+        if (!selectedCity) {
+            setCatalog([]);
+            return;
+        }
+
         const delayDebounceFn = setTimeout(() => {
             fetchCatalog();
         }, 300);
@@ -70,6 +109,8 @@ export default function LandingPage() {
     }, [search, selectedCity]);
 
     const fetchCatalog = async () => {
+        if (!selectedCity) return; // Segurança extra
+
         try {
             setLoading(true);
             const querySearch = encodeURIComponent(search.trim());
@@ -81,9 +122,6 @@ export default function LandingPage() {
 
             if (data && typeof data === 'object' && 'catalog' in data) {
                 setCatalog(Array.isArray(data.catalog) ? data.catalog : []);
-                if (Array.isArray(data.cities) && selectedCity === '') {
-                    setAvailableCities(data.cities);
-                }
             } else {
                 setCatalog(Array.isArray(data) ? data : []);
             }
@@ -91,6 +129,19 @@ export default function LandingPage() {
             console.error("Erro ao carregar o catálogo:", err);
         } finally {
             setLoading(false);
+        }
+    };
+
+    // Função para alternar o tema
+    const toggleTheme = () => {
+        if (theme === 'light') {
+            setTheme('dark');
+            document.documentElement.classList.add('dark');
+            localStorage.setItem('theme', 'dark');
+        } else {
+            setTheme('light');
+            document.documentElement.classList.remove('dark');
+            localStorage.setItem('theme', 'light');
         }
     };
 
@@ -117,6 +168,18 @@ export default function LandingPage() {
         setIsModalOpen(true);
     };
 
+    const handleSelectCity = (city: string) => {
+        setSelectedCity(city);
+        setCityInput(city);
+        setIsDropdownOpen(false);
+    };
+
+    const handleClearCity = () => {
+        setSelectedCity('');
+        setCityInput('');
+        setCatalog([]);
+    };
+
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans transition-colors duration-300">
             {/* CABEÇALHO COM GRADIENTE DINÂMICO */}
@@ -135,12 +198,10 @@ export default function LandingPage() {
                     title={theme === 'light' ? 'Ativar Modo Escuro' : 'Ativar Modo Claro'}
                 >
                     {theme === 'light' ? (
-                        // Ícone da Lua (Aparece no Modo Claro para ir pro Escuro)
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-slate-700">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z" />
                         </svg>
                     ) : (
-                        // Ícone do Sol (Aparece no Modo Escuro para ir pro Claro)
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-amber-400">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m0 13.5V21M4.22 4.22l1.58 1.58m12.42 12.42l1.58 1.58M3 12h2.25m13.5 0H21M6.01 17.99l1.58-1.58M16.28 7.72l1.58-1.58M12 7.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Z" />
                         </svg>
@@ -174,27 +235,63 @@ export default function LandingPage() {
                                 className="w-full px-4 py-3 outline-none text-slate-900 dark:text-slate-100 placeholder-slate-400 bg-transparent text-sm rounded-xl focus:bg-slate-50 dark:focus:bg-slate-800/40 transition"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
+                                disabled={!selectedCity} // Desativa o campo até escolher a cidade
                             />
 
                             <div className="h-px md:h-8 w-full md:w-px bg-slate-200 dark:bg-slate-800 my-1 md:my-auto"></div>
 
-                            {/* Seletor Dinâmico de Cidades */}
-                            <select
-                                value={selectedCity}
-                                onChange={(e) => setSelectedCity(e.target.value)}
-                                className="px-4 py-3 outline-none text-slate-700 dark:text-slate-300 text-sm bg-transparent cursor-pointer min-w-[180px] font-medium"
-                            >
-                                <option value="" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Todas as cidades</option>
-                                {availableCities.map((cidade) => (
-                                    <option key={cidade} value={cidade} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
-                                        {cidade}
-                                    </option>
-                                ))}
-                            </select>
+                            {/* Seletor Dinâmico de Cidades Autocompletar */}
+                            <div className="relative min-w-[220px]" ref={dropdownRef}>
+                                <div className="flex items-center px-4 py-3 bg-transparent rounded-xl focus-within:bg-slate-50 dark:focus-within:bg-slate-800/40 transition">
+                                    <input
+                                        type="text"
+                                        placeholder="Selecione uma cidade..."
+                                        className="w-full outline-none text-slate-900 dark:text-slate-100 placeholder-slate-400 bg-transparent text-sm font-medium"
+                                        value={cityInput}
+                                        onChange={(e) => {
+                                            setCityInput(e.target.value);
+                                            setIsDropdownOpen(true);
+                                            if (selectedCity) setSelectedCity(''); // Reseta a seleção se começar a digitar novamente
+                                        }}
+                                        onFocus={() => setIsDropdownOpen(true)}
+                                    />
+                                    {cityInput && (
+                                        <button
+                                            onClick={handleClearCity}
+                                            className="ml-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-base"
+                                            type="button"
+                                        >
+                                            &times;
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* Lista suspensa de sugestões */}
+                                {isDropdownOpen && (
+                                    <ul className="absolute left-0 right-0 mt-2 max-h-60 overflow-y-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-30 text-left text-sm py-1 transition-all">
+                                        {filteredCities.length > 0 ? (
+                                            filteredCities.map((city) => (
+                                                <li
+                                                    key={city}
+                                                    onClick={() => handleSelectCity(city)}
+                                                    className="px-4 py-2.5 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
+                                                >
+                                                    {city}
+                                                </li>
+                                            ))
+                                        ) : (
+                                            <li className="px-4 py-2.5 text-slate-400 dark:text-slate-500 italic">
+                                                Nenhuma cidade encontrada
+                                            </li>
+                                        )}
+                                    </ul>
+                                )}
+                            </div>
 
                             <button
                                 onClick={fetchCatalog}
-                                className="bg-slate-900 dark:bg-amber-500 hover:bg-slate-800 dark:hover:bg-amber-600 text-white dark:text-slate-950 px-6 py-3 rounded-xl transition-all font-bold text-sm whitespace-nowrap shadow-sm"
+                                disabled={!selectedCity}
+                                className="bg-slate-900 dark:bg-amber-500 hover:bg-slate-800 dark:hover:bg-amber-600 disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-650 text-white dark:text-slate-950 px-6 py-3 rounded-xl transition-all font-bold text-sm whitespace-nowrap shadow-sm disabled:cursor-not-allowed"
                             >
                                 Pesquisar
                             </button>
@@ -205,26 +302,39 @@ export default function LandingPage() {
 
             {/* CONTEÚDO PRINCIPAL */}
             <main className="max-w-7xl mx-auto px-4 py-16">
-                {loading ? (
+                {!selectedCity ? (
+                    /* Tela inicial instruindo a seleção de cidade */
+                    <div className="text-center py-20 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 transition-colors">
+                        <div className="mx-auto w-16 h-16 mb-4 flex items-center justify-center rounded-full bg-amber-50 dark:bg-amber-500/10 text-amber-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-8 h-8">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+                            </svg>
+                        </div>
+                        <h3 className="text-xl font-serif font-bold text-slate-900 dark:text-white mb-2">Para começar, escolha uma cidade</h3>
+                        <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto text-sm leading-relaxed">
+                            Digite ou selecione a cidade de interesse no campo acima para visualizar as ofertas e anúncios disponíveis.
+                        </p>
+                    </div>
+                ) : loading ? (
                     <div className="text-center py-20">
                         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500 mx-auto"></div>
-                        <p className="mt-4 text-slate-400 dark:text-slate-500 font-light">Buscando as melhores oportunidades...</p>
+                        <p className="mt-4 text-slate-400 dark:text-slate-500 font-light">Buscando as melhores oportunidades em {selectedCity}...</p>
                     </div>
                 ) : catalog.length === 0 ? (
                     <div className="text-center py-20 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 transition-colors">
-                        <p className="text-slate-500 dark:text-slate-400 text-lg">Nenhum anúncio localizado para sua busca.</p>
+                        <p className="text-slate-500 dark:text-slate-400 text-lg">Nenhum anúncio localizado para sua busca em {selectedCity}.</p>
                     </div>
                 ) : (
                     <div className="space-y-20">
                         {catalog.map((group) => (
                             <section
                                 key={group.tenantId}
-                                className="bg-white dark:bg-slate-905/40 dark:bg-slate-900 rounded-3xl shadow-sm hover:shadow-md transition-all duration-305 border border-slate-200 dark:border-slate-800/80 p-6 md:p-10"
+                                className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 border border-slate-200 dark:border-slate-800/80 p-6 md:p-10"
                             >
                                 {/* Cabeçalho do Corretor */}
                                 <div className="border-b border-slate-100 dark:border-slate-800/80 pb-6 mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                                     <div>
-
                                         <h2 className="text-3xl font-serif font-bold text-slate-900 dark:text-white">{group.tenantName}</h2>
 
                                         {/* LINHA ÚNICA: CONTATO + CIDADE JUNTOS */}
@@ -239,7 +349,6 @@ export default function LandingPage() {
                                                 </>
                                             )}
                                         </div>
-
                                     </div>
                                     {group.tenantCardLink && (
                                         <a
@@ -262,7 +371,7 @@ export default function LandingPage() {
                                         return (
                                             <div
                                                 key={offer._id}
-                                                className="group flex flex-col bg-slate-50/50 dark:bg-slate-950 rounded-2xl overflow-hidden border border-slate-205 dark:border-slate-800/80 hover:border-amber-500 dark:hover:border-amber-500 transition-all duration-300"
+                                                className="group flex flex-col bg-slate-50/50 dark:bg-slate-950 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800/80 hover:border-amber-500 dark:hover:border-amber-500 transition-all duration-300"
                                             >
                                                 {/* Mini Carrossel de Imagens */}
                                                 <div className="relative h-60 bg-slate-200 dark:bg-slate-900 overflow-hidden">
