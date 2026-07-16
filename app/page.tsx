@@ -109,15 +109,12 @@ export default function LandingPage() {
     }, [search, selectedCity]);
 
     // --- INTERCEPTADOR DO BOTÃO VOLTAR DO CELULAR ---
-    // Sempre que o modal abrir, criamos um "ponto de retorno" no histórico.
     useEffect(() => {
         if (!isModalOpen) return;
 
-        // Adiciona o estado fictício no histórico ao abrir o modal
         window.history.pushState({ modalOpen: true }, '');
 
         const handlePopState = (event: PopStateEvent) => {
-            // Se o usuário clicar em "Voltar" no celular, fechamos o modal
             setIsModalOpen(false);
         };
 
@@ -125,7 +122,6 @@ export default function LandingPage() {
 
         return () => {
             window.removeEventListener('popstate', handlePopState);
-            // Se fecharmos o modal clicando em "Fechar" ou no fundo, limpamos o estado do histórico voluntariamente
             if (window.history.state?.modalOpen) {
                 window.history.back();
             }
@@ -133,7 +129,7 @@ export default function LandingPage() {
     }, [isModalOpen]);
 
     const fetchCatalog = async () => {
-        if (!selectedCity) return; // Segurança extra
+        if (!selectedCity) return;
 
         try {
             setLoading(true);
@@ -156,7 +152,6 @@ export default function LandingPage() {
         }
     };
 
-    // Função para alternar o tema
     const toggleTheme = () => {
         if (theme === 'light') {
             setTheme('dark');
@@ -206,7 +201,21 @@ export default function LandingPage() {
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans transition-colors duration-300">
-            {/* CABEÇALHO COM GRADIENTE DINÂMICO */}
+            {/* Injeção local de estilos para a animação do degradê dinâmico */}
+            <style dangerouslySetInnerHTML={{
+                __html: `
+                @keyframes gradient-shift {
+                    0% { background-position: 0% 50%; }
+                    50% { background-position: 100% 50%; }
+                    100% { background-position: 0% 50%; }
+                }
+                .animate-gradient-dynamic {
+                    background-size: 200% 200%;
+                    animation: gradient-shift 3s ease infinite;
+                }
+            `}} />
+
+            {/* CABEÇALHO */}
             <header
                 className="relative min-h-[280px] py-8 flex items-center justify-center bg-cover bg-center transition-all duration-300"
                 style={{
@@ -250,44 +259,46 @@ export default function LandingPage() {
                     </div>
 
                     {/* Barra de Filtros Combinada */}
-                    <div className="w-full bg-white dark:bg-slate-900 rounded-2xl shadow-lg dark:shadow-2xl p-2 border border-slate-200 dark:border-slate-850 transition-all">
+                    <div className="w-full bg-white dark:bg-slate-900 rounded-2xl shadow-lg dark:shadow-2xl p-2 border border-slate-200 dark:border-slate-800 transition-all">
                         <div className="flex flex-col md:flex-row gap-2">
-                            {/* Input de Busca */}
-                            <input
-                                type="text"
-                                placeholder="O que procura? (Ex: Terreno, Piscina, Sobrado...)"
-                                className="w-full px-4 py-3 outline-none text-slate-900 dark:text-slate-100 placeholder-slate-400 bg-transparent text-sm rounded-xl focus:bg-slate-50 dark:focus:bg-slate-800/40 transition"
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                disabled={!selectedCity} // Desativa o campo até escolher a cidade
-                            />
 
-                            <div className="h-px md:h-8 w-full md:w-px bg-slate-200 dark:bg-slate-800 my-1 md:my-auto"></div>
+                            {/* 1º ELEMENTO: Seletor Dinâmico de Cidades Autocompletar */}
+                            <div className="relative flex-1 md:max-w-[280px]" ref={dropdownRef}>
+                                <div
+                                    className={`relative p-[2px] rounded-xl transition-all duration-500 ${!selectedCity
+                                            ? "bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-400 animate-gradient-dynamic shadow-md shadow-amber-500/10"
+                                            : "bg-transparent"
+                                        }`}
+                                >
+                                    <div className="flex items-center px-4 py-3 bg-white dark:bg-slate-900 rounded-[10px] transition focus-within:bg-slate-50 dark:focus-within:bg-slate-800/40">
+                                        {/* Ícone de Pin Localizador para somar ao visual chamativo */}
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={`w-4 h-4 mr-2 transition-colors ${!selectedCity ? "text-amber-500 animate-pulse" : "text-slate-400"}`}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+                                        </svg>
 
-                            {/* Seletor Dinâmico de Cidades Autocompletar */}
-                            <div className="relative min-w-[220px]" ref={dropdownRef}>
-                                <div className="flex items-center px-4 py-3 bg-transparent rounded-xl focus-within:bg-slate-50 dark:focus-within:bg-slate-800/40 transition">
-                                    <input
-                                        type="text"
-                                        placeholder="Selecione uma cidade..."
-                                        className="w-full outline-none text-slate-900 dark:text-slate-100 placeholder-slate-400 bg-transparent text-sm font-medium"
-                                        value={cityInput}
-                                        onChange={(e) => {
-                                            setCityInput(e.target.value);
-                                            setIsDropdownOpen(true);
-                                            if (selectedCity) setSelectedCity(''); // Reseta a seleção se começar a digitar novamente
-                                        }}
-                                        onFocus={() => setIsDropdownOpen(true)}
-                                    />
-                                    {cityInput && (
-                                        <button
-                                            onClick={handleClearCity}
-                                            className="ml-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-base"
-                                            type="button"
-                                        >
-                                            &times;
-                                        </button>
-                                    )}
+                                        <input
+                                            type="text"
+                                            placeholder="Selecione uma cidade..."
+                                            className="w-full outline-none text-slate-900 dark:text-slate-100 placeholder-slate-400 bg-transparent text-sm font-semibold"
+                                            value={cityInput}
+                                            onChange={(e) => {
+                                                setCityInput(e.target.value);
+                                                setIsDropdownOpen(true);
+                                                if (selectedCity) setSelectedCity('');
+                                            }}
+                                            onFocus={() => setIsDropdownOpen(true)}
+                                        />
+                                        {cityInput && (
+                                            <button
+                                                onClick={handleClearCity}
+                                                className="ml-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg line-none"
+                                                type="button"
+                                            >
+                                                &times;
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
 
                                 {/* Lista suspensa de sugestões */}
@@ -312,6 +323,18 @@ export default function LandingPage() {
                                 )}
                             </div>
 
+                            <div className="h-px md:h-8 w-full md:w-px bg-slate-200 dark:bg-slate-800 my-1 md:my-auto"></div>
+
+                            {/* 2º ELEMENTO: Input de Busca */}
+                            <input
+                                type="text"
+                                placeholder={selectedCity ? "O que procura? (Ex: Terreno, Piscina, Sobrado...)" : "⚠️ Selecione primeiro a cidade ao lado"}
+                                className="w-full flex-1 px-4 py-3 outline-none text-slate-900 dark:text-slate-100 placeholder-slate-400 bg-transparent text-sm rounded-xl focus:bg-slate-50 dark:focus:bg-slate-800/40 transition disabled:cursor-not-allowed"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                disabled={!selectedCity}
+                            />
+
                             <button
                                 onClick={fetchCatalog}
                                 disabled={!selectedCity}
@@ -327,7 +350,6 @@ export default function LandingPage() {
             {/* CONTEÚDO PRINCIPAL */}
             <main className="max-w-7xl mx-auto px-4 py-16">
                 {!selectedCity ? (
-                    /* Tela inicial instruindo a seleção de cidade */
                     <div className="text-center py-20 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 transition-colors">
                         <div className="mx-auto w-16 h-16 mb-4 flex items-center justify-center rounded-full bg-amber-50 dark:bg-amber-500/10 text-amber-500">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-8 h-8">
@@ -337,7 +359,7 @@ export default function LandingPage() {
                         </div>
                         <h3 className="text-xl font-serif font-bold text-slate-900 dark:text-white mb-2">Para começar, escolha uma cidade</h3>
                         <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto text-sm leading-relaxed">
-                            Digite ou selecione a cidade de interesse no campo acima para visualizar as ofertas e anúncios disponíveis.
+                            Digite ou selecione a cidade de interesse no campo em destaque acima para visualizar as ofertas e anúncios disponíveis.
                         </p>
                     </div>
                 ) : loading ? (
@@ -360,8 +382,6 @@ export default function LandingPage() {
                                 <div className="border-b border-slate-100 dark:border-slate-800/80 pb-6 mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                                     <div>
                                         <h2 className="text-3xl font-serif font-bold text-slate-900 dark:text-white">{group.tenantName}</h2>
-
-                                        {/* LINHA ÚNICA: CONTATO + CIDADE JUNTOS */}
                                         <div className="flex flex-wrap items-center gap-2 mt-1 text-sm text-slate-500 dark:text-slate-400">
                                             <span>Contato: {group.tenantPhone}</span>
                                             {group.tenantCity && (
@@ -466,16 +486,14 @@ export default function LandingPage() {
                 )}
             </main>
 
-            {/* MODAL DE ZOOM DA GALERIA (LIGHTBOX MELHORADO PARA MOBILE) */}
+            {/* MODAL DE ZOOM DA GALERIA */}
             {isModalOpen && modalImages.length > 0 && (
                 <div
                     onClick={(e) => {
-                        // Fecha o modal caso clique na área de fundo preta fora do conteúdo/imagem
                         if (e.target === e.currentTarget) setIsModalOpen(false);
                     }}
                     className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/95 transition-opacity duration-300 select-none"
                 >
-                    {/* Botão Superior Direito de Fechar (Disponível sempre, escondido apenas no layout muito pequeno do mobile) */}
                     <button
                         onClick={() => setIsModalOpen(false)}
                         className="absolute top-6 right-6 text-white text-4xl hover:text-amber-400 transition z-50 font-light hidden md:block cursor-pointer"
@@ -483,12 +501,10 @@ export default function LandingPage() {
                         &times;
                     </button>
 
-                    {/* Indicador de Páginas Centralizado no Topo */}
                     <div className="absolute top-6 left-1/2 -translate-x-1/2 text-white/80 font-medium text-xs tracking-widest bg-slate-900/60 border border-white/10 px-4 py-1.5 rounded-full backdrop-blur-md z-50">
                         {currentModalIndex + 1} / {modalImages.length}
                     </div>
 
-                    {/* Botão de Voltar Imagem (Navegação Esquerda) */}
                     {modalImages.length > 1 && (
                         <button
                             onClick={() => setCurrentModalIndex(prev => prev === 0 ? modalImages.length - 1 : prev - 1)}
@@ -498,17 +514,15 @@ export default function LandingPage() {
                         </button>
                     )}
 
-                    {/* Container da Imagem */}
                     <div className="relative max-h-[70vh] md:max-h-[80vh] max-w-[90vw] flex items-center justify-center">
                         <img
                             src={modalImages[currentModalIndex]}
                             alt={`Imagem ${currentModalIndex + 1} em zoom`}
                             className="max-h-[70vh] md:max-h-[80vh] max-w-[90vw] object-contain select-none shadow-2xl rounded-lg"
-                            onClick={(e) => e.stopPropagation()} // Impede o clique na imagem de fechar o modal
+                            onClick={(e) => e.stopPropagation()}
                         />
                     </div>
 
-                    {/* Botão de Avançar Imagem (Navegação Direita) */}
                     {modalImages.length > 1 && (
                         <button
                             onClick={() => setCurrentModalIndex(prev => prev === modalImages.length - 1 ? 0 : prev + 1)}
@@ -518,7 +532,6 @@ export default function LandingPage() {
                         </button>
                     )}
 
-                    {/* Botão "Fechar" Inferior - Altamente Ergonômico para Mobile */}
                     <button
                         onClick={() => setIsModalOpen(false)}
                         className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-white/10 hover:bg-white/20 active:bg-white/30 text-white px-6 py-3 rounded-full flex items-center gap-2 text-sm font-semibold border border-white/20 backdrop-blur-md shadow-lg transition-all cursor-pointer"
