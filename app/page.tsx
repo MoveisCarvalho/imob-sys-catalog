@@ -20,7 +20,7 @@ export default function LandingPage() {
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     const [loading, setLoading] = useState(false);
-    const [isCitiesLoading, setIsCitiesLoading] = useState(false); // <-- NOVO: Carregamento da lista inicial de cidades
+    const [isCitiesLoading, setIsCitiesLoading] = useState(false);
     const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
     // Estados do Modal
@@ -167,7 +167,7 @@ export default function LandingPage() {
         setSelectedCity(city);
         setCityInput(city);
         setIsDropdownOpen(false);
-        setLoading(true); // <-- Dá resposta visual instantânea ao usuário
+        setLoading(true);
     };
 
     const handleClearCity = () => {
@@ -195,38 +195,56 @@ export default function LandingPage() {
                 }}
             />
 
-            {/* CABEÇALHO */}
+            {/* CABEÇALHO FIXO (STICKY) */}
             <header
-                className="relative min-h-[280px] py-8 flex items-center justify-center bg-cover bg-center transition-all duration-300"
+                className="sticky top-0 z-40 py-3 md:py-4 flex items-center justify-center bg-cover bg-center shadow-md backdrop-blur-md transition-all duration-300 border-b border-slate-200/50 dark:border-slate-800/50"
                 style={{
                     backgroundImage:
                         theme === 'dark'
-                            ? `linear-gradient(to bottom, rgba(15, 23, 42, 0.92), rgba(2, 6, 23, 0.98)), url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1920&q=80')`
-                            : `linear-gradient(to bottom, rgba(255, 255, 255, 0.85), rgba(248, 250, 252, 0.95)), url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1920&q=80')`,
+                            ? `linear-gradient(to bottom, rgba(15, 23, 42, 0.94), rgba(2, 6, 23, 0.98)), url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1920&q=80')`
+                            : `linear-gradient(to bottom, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.97)), url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1920&q=80')`,
                 }}
             >
                 <ThemeToggle theme={theme} onToggle={toggleTheme} />
 
-                <div className="relative z-10 w-full max-w-4xl mx-auto px-4 text-center flex flex-col gap-4">
-                    <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs md:text-sm">
-                        <span className="text-slate-600 dark:text-slate-300 font-medium">
-                            Ofertas em um único lugar, sem burocracia.
-                        </span>
-                        <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">|</span>
+                <div className="relative z-10 w-full max-w-4xl mx-auto px-4 text-center flex flex-col gap-2.5">
+
+                    {/* LINHA SUPERIOR: CIDADE EM DESTAQUE + BOTAO DE CONTATO IMPRESSIONANTE AO LADO */}
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-b border-slate-200/40 dark:border-slate-800/40 pb-2">
+
+                        {/* NOME DA CIDADE OU FRASE INICIAL */}
+                        {selectedCity ? (
+                            <div className="flex items-center gap-2 animate-fadeIn">
+                                <span className="text-[11px] uppercase tracking-widest text-slate-500 dark:text-slate-400 font-bold">
+                                    Ofertas em:
+                                </span>
+                                <h1 className="text-xl md:text-2xl font-black text-amber-600 dark:text-amber-400 tracking-tight drop-shadow-sm flex items-center gap-1">
+                                    📍 {selectedCity}
+                                </h1>
+                            </div>
+                        ) : (
+                            <span className="text-xs md:text-sm text-slate-600 dark:text-slate-300 font-medium">
+                                Ofertas em um único lugar, sem burocracia.
+                            </span>
+                        )}
+
+                        {/* CHAMADA IMPACTANTE PARA ANUNCIAR (BOTÃO WHATSAPP) */}
                         <a
                             href="https://wa.me/5518997261236"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-amber-600 dark:text-amber-400 hover:underline font-bold transition-colors"
+                            className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 text-white px-3.5 py-1.5 rounded-full text-xs font-bold shadow-md hover:shadow-emerald-500/20 transition-all transform hover:-translate-y-0.5 active:translate-y-0"
                         >
-                            Anuncie aqui: (18) 99726-1236
+                            <span className="text-sm animate-bounce">📢</span>
+                            <span>Vendo, Troco, Empresto? <strong className="underline font-extrabold">Anuncie aqui: (18) 99726-1236</strong></span>
                         </a>
+
                     </div>
 
                     {/* BARRA DE PESQUISA COMBINADA */}
                     <div className="w-full bg-white dark:bg-slate-900 rounded-2xl shadow-lg dark:shadow-2xl p-2 border border-slate-200 dark:border-slate-800 transition-all relative">
 
-                        {/* NOVO: AVISO FLUTUANTE DE PROCESSANDO */}
+                        {/* AVISO FLUTUANTE DE PROCESSANDO */}
                         {loading && (
                             <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-amber-500 text-slate-950 font-bold text-xs px-4 py-1.5 rounded-full shadow-lg flex items-center gap-2 animate-bounce z-20">
                                 <svg className="animate-spin h-3.5 w-3.5 text-slate-950" fill="none" viewBox="0 0 24 24">
@@ -255,14 +273,14 @@ export default function LandingPage() {
 
                             <input
                                 type="text"
-                                placeholder={selectedCity ? 'O que procura? (Ex: Terreno, Piscina, Sobrado...)' : '⚠️ Selecione primeiro a cidade ao lado'}
+                                placeholder={selectedCity ? 'O que procura? (Ex: Terreno, Piscina, Sobrado...)' : '⚠️ Selecione primeiro a cidade ao lado ou acima'}
                                 className="w-full flex-1 px-4 py-3 outline-none text-slate-900 dark:text-slate-100 placeholder-slate-400 bg-transparent text-sm rounded-xl focus:bg-slate-50 dark:focus:bg-slate-800/40 transition disabled:cursor-not-allowed"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 disabled={!selectedCity || loading}
                             />
 
-                            {/* BOTÃO COM ÍCONE E TEXTO DE PROCESSANDO */}
+                            {/* BOTÃO DE PESQUISA */}
                             <button
                                 onClick={fetchCatalog}
                                 disabled={!selectedCity || loading}
@@ -286,7 +304,7 @@ export default function LandingPage() {
             </header>
 
             {/* CONTEÚDO PRINCIPAL */}
-            <main className="max-w-7xl mx-auto px-4 py-16">
+            <main className="max-w-7xl mx-auto px-4 py-12">
                 {!selectedCity ? (
                     <div className="text-center py-20 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 transition-colors">
                         <div className="mx-auto w-16 h-16 mb-4 flex items-center justify-center rounded-full bg-amber-50 dark:bg-amber-500/10 text-amber-500">

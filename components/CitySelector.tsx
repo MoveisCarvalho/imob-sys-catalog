@@ -31,11 +31,22 @@ export const CitySelector: React.FC<CitySelectorProps> = ({
         <div className="relative flex-1 md:max-w-[280px]" ref={dropdownRef}>
             <div
                 className={`relative p-[2px] rounded-xl transition-all duration-500 ${!selectedCity
-                        ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-400 animate-gradient-dynamic shadow-md shadow-amber-500/10'
-                        : 'bg-transparent'
+                    ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-400 animate-gradient-dynamic shadow-md shadow-amber-500/10'
+                    : 'bg-transparent'
                     }`}
             >
                 <div className="flex items-center px-4 py-3 bg-white dark:bg-slate-900 rounded-[10px] transition focus-within:bg-slate-50 dark:focus-within:bg-slate-800/40">
+
+                    {/* EMOJI DE DESTAQUE COM ANIMAÇÃO */}
+                    <span
+                        className={`text-base mr-1.5 select-none transition-transform ${!selectedCity ? 'animate-bounce' : 'opacity-80'
+                            }`}
+                        role="img"
+                        aria-label="Apontando"
+                    >
+                        {selectedCity ? '📍' : '👉'}
+                    </span>
+
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
                         fill="none"
@@ -51,7 +62,7 @@ export const CitySelector: React.FC<CitySelectorProps> = ({
                     <input
                         type="text"
                         placeholder="Selecione uma cidade..."
-                        className="w-full outline-none text-slate-900 dark:text-slate-100 placeholder-slate-400 bg-transparent text-sm font-semibold"
+                        className="w-full outline-none text-slate-900 dark:text-slate-100 placeholder-slate-400 bg-transparent text-sm font-semibold cursor-pointer"
                         value={cityInput}
                         onChange={(e) => {
                             setCityInput(e.target.value);
