@@ -29,7 +29,7 @@ export async function GET(request: Request) {
         let matchQuery: any = {};
         let tenantFilter: any = {};
 
-        // 2. Filtro por cidade nos corretores (Tenants) - Agora escapando parênteses com segurança
+        // 2. Filtro por cidade nos corretores (Tenants)
         if (cityParam && cityParam.trim() !== '') {
             const escapedCity = escapeRegExp(cityParam.trim());
             tenantFilter.city = { $regex: new RegExp(`^${escapedCity}$`, 'i') };
@@ -81,6 +81,7 @@ export async function GET(request: Request) {
                 tenantPhone: tenant.phone,
                 tenantCity: tenant.city || '',
                 tenantCardLink: tenant.businessCardLink || '',
+                websiteLink: tenant.websiteLink || tenant.website || tenant.siteUrl || tenant.site || '',
                 offers: tenantOffers
             };
         }).filter(group => group.offers.length > 0); // Remove corretores que não têm imóveis correspondentes ao filtro
