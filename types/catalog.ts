@@ -3,6 +3,7 @@ export interface Offer {
     title: string;
     description: string;
     images: string[];
+    createdAt?: string; // Adicionado para receber a data de criação do Mongoose
 }
 
 export interface TenantGroup {
@@ -11,6 +12,6 @@ export interface TenantGroup {
     tenantPhone: string;
     tenantCity: string;
     tenantCardLink: string;
-    websiteLink?: string; // Adicionado para receber o site do banco de dados
+    websiteLink?: string;
     offers: Offer[];
 }

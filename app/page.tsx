@@ -10,6 +10,7 @@ import { ImageModal } from '@/components/ImageModal';
 export default function LandingPage() {
     const [catalog, setCatalog] = useState<TenantGroup[]>([]);
     const [search, setSearch] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
 
     // Estados de seleção de cidade
     const [cityInput, setCityInput] = useState('');
@@ -84,7 +85,16 @@ export default function LandingPage() {
         }
     }, [cityInput, availableCities]);
 
-    // Debounce na busca do catálogo
+    // Debounce da digitação da busca (500ms)
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(search);
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [search]);
+
+    // Dispara busca no backend
     useEffect(() => {
         if (!selectedCity) {
             setCatalog([]);
@@ -92,12 +102,8 @@ export default function LandingPage() {
             return;
         }
 
-        const delayDebounceFn = setTimeout(() => {
-            fetchCatalog();
-        }, 300);
-
-        return () => clearTimeout(delayDebounceFn);
-    }, [search, selectedCity]);
+        fetchCatalog(debouncedSearch, selectedCity);
+    }, [debouncedSearch, selectedCity]);
 
     // Interceptador do Botão Voltar do celular para o Modal
     useEffect(() => {
@@ -119,13 +125,13 @@ export default function LandingPage() {
         };
     }, [isModalOpen]);
 
-    const fetchCatalog = async () => {
-        if (!selectedCity) return;
+    const fetchCatalog = async (searchTerm = debouncedSearch, cityTerm = selectedCity) => {
+        if (!cityTerm) return;
 
         try {
             setLoading(true);
-            const querySearch = encodeURIComponent(search.trim());
-            const queryCity = encodeURIComponent(selectedCity.trim());
+            const querySearch = encodeURIComponent(searchTerm.trim());
+            const queryCity = encodeURIComponent(cityTerm.trim());
 
             const url = `/api/catalog?search=${querySearch}&city=${queryCity}`;
             const res = await fetch(url);
@@ -162,7 +168,6 @@ export default function LandingPage() {
         setIsModalOpen(true);
     };
 
-    // SELEÇÃO DE CIDADE: Seta loading como true IMEDIATAMENTE ao clicar
     const handleSelectCity = (city: string) => {
         setSelectedCity(city);
         setCityInput(city);
@@ -173,8 +178,16 @@ export default function LandingPage() {
     const handleClearCity = () => {
         setSelectedCity('');
         setCityInput('');
+        setSearch('');
+        setDebouncedSearch('');
         setCatalog([]);
         setLoading(false);
+    };
+
+    // Função para limpar o texto da pesquisa
+    const handleClearSearch = () => {
+        setSearch('');
+        setDebouncedSearch('');
     };
 
     return (
@@ -209,10 +222,9 @@ export default function LandingPage() {
 
                 <div className="relative z-10 w-full max-w-4xl mx-auto px-4 text-center flex flex-col gap-2.5">
 
-                    {/* LINHA SUPERIOR: CIDADE EM DESTAQUE + BOTAO DE CONTATO IMPRESSIONANTE AO LADO */}
+                    {/* LINHA SUPERIOR */}
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-b border-slate-200/40 dark:border-slate-800/40 pb-2">
 
-                        {/* NOME DA CIDADE OU FRASE INICIAL */}
                         {selectedCity ? (
                             <div className="flex items-center gap-2 animate-fadeIn">
                                 <span className="text-[11px] uppercase tracking-widest text-slate-500 dark:text-slate-400 font-bold">
@@ -228,7 +240,6 @@ export default function LandingPage() {
                             </span>
                         )}
 
-                        {/* CHAMADA IMPACTANTE PARA ANUNCIAR (BOTÃO WHATSAPP) */}
                         <a
                             href="https://wa.me/5518997261236"
                             target="_blank"
@@ -244,7 +255,6 @@ export default function LandingPage() {
                     {/* BARRA DE PESQUISA COMBINADA */}
                     <div className="w-full bg-white dark:bg-slate-900 rounded-2xl shadow-lg dark:shadow-2xl p-2 border border-slate-200 dark:border-slate-800 transition-all relative">
 
-                        {/* AVISO FLUTUANTE DE PROCESSANDO */}
                         {loading && (
                             <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-amber-500 text-slate-950 font-bold text-xs px-4 py-1.5 rounded-full shadow-lg flex items-center gap-2 animate-bounce z-20">
                                 <svg className="animate-spin h-3.5 w-3.5 text-slate-950" fill="none" viewBox="0 0 24 24">
@@ -271,33 +281,38 @@ export default function LandingPage() {
 
                             <div className="h-px md:h-8 w-full md:w-px bg-slate-200 dark:bg-slate-800 my-1 md:my-auto"></div>
 
-                            <input
-                                type="text"
-                                placeholder={selectedCity ? 'O que procura? (Ex: Terreno, Piscina, Sobrado...)' : '⚠️ Selecione primeiro a cidade ao lado ou acima'}
-                                className="w-full flex-1 px-4 py-3 outline-none text-slate-900 dark:text-slate-100 placeholder-slate-400 bg-transparent text-sm rounded-xl focus:bg-slate-50 dark:focus:bg-slate-800/40 transition disabled:cursor-not-allowed"
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                disabled={!selectedCity || loading}
-                            />
+                            {/* CAMPO DE PESQUISA COM ÍCONE DE LUPA E BOTÃO LIMPAR */}
+                            <div className="relative flex-1 flex items-center">
+                                {/* Ícone da Lupa */}
+                                <div className="absolute left-3.5 text-slate-400 pointer-events-none flex items-center">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                </div>
 
-                            {/* BOTÃO DE PESQUISA */}
-                            <button
-                                onClick={fetchCatalog}
-                                disabled={!selectedCity || loading}
-                                className="bg-slate-900 dark:bg-amber-500 hover:bg-slate-800 dark:hover:bg-amber-600 disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-600 text-white dark:text-slate-950 px-6 py-3 rounded-xl transition-all font-bold text-sm whitespace-nowrap shadow-sm disabled:cursor-not-allowed flex items-center justify-center gap-2 min-w-[130px]"
-                            >
-                                {loading ? (
-                                    <>
-                                        <svg className="animate-spin h-4 w-4 text-current" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                <input
+                                    type="text"
+                                    placeholder={selectedCity ? 'O que procura? (Ex: Terreno, Piscina, Sobrado...)' : '⚠️ Selecione primeiro a cidade ao lado ou acima'}
+                                    className="w-full pl-10 pr-10 py-3 outline-none text-slate-900 dark:text-slate-100 placeholder-slate-400 bg-transparent text-sm rounded-xl focus:bg-slate-50 dark:focus:bg-slate-800/40 transition disabled:cursor-not-allowed"
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    disabled={!selectedCity}
+                                />
+
+                                {/* Botão Limpar (só aparece quando houver texto) */}
+                                {search && (
+                                    <button
+                                        type="button"
+                                        onClick={handleClearSearch}
+                                        className="absolute right-3 p-1 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 transition flex items-center justify-center"
+                                        title="Limpar pesquisa"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                                         </svg>
-                                        <span>Processando...</span>
-                                    </>
-                                ) : (
-                                    'Pesquisar'
+                                    </button>
                                 )}
-                            </button>
+                            </div>
                         </div>
                     </div>
                 </div>

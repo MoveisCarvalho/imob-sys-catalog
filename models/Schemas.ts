@@ -29,7 +29,9 @@ export interface IOffer extends Document {
     description: string;
     images: string[];
     businessCardLink?: string;
+    createdAt?: string;
 }
+
 
 const OfferSchema = new Schema<IOffer>({
     tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true },

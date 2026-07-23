@@ -63,13 +63,15 @@ export async function GET(request: Request) {
             matchQuery.tenantId = { $in: cityTenantIds };
         }
 
-        // Busca as ofertas filtradas
-        const offers = await Offer.find(matchQuery).lean();
+        // Busca as ofertas filtradas e ORDENA POR DATA DE CRIAÇÃO DECRESCENTE (mais recentes primeiro)
+        const offers = await Offer.find(matchQuery)
+            .sort({ createdAt: -1, _id: -1 })
+            .lean();
 
-        // Busca os corretores aplicando o filtro de cidade (se ativo)
+        // Busca os corretores aplicando o filtro de cidade (se ativo) ordenados por nome
         const tenants = await Tenant.find(tenantFilter).sort({ name: 1 }).lean();
 
-        // Agrupa as ofertas por corretor
+        // Agrupa as ofertas por corretor (mantendo a ordem decrescente das ofertas)
         const groupedCatalog = tenants.map((tenant: any) => {
             const tenantOffers = offers.filter((offer: any) =>
                 offer.tenantId && offer.tenantId.toString() === tenant._id.toString()
