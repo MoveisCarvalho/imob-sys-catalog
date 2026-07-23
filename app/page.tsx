@@ -236,7 +236,7 @@ export default function LandingPage() {
                             className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 text-white px-3.5 py-1.5 rounded-full text-xs font-bold shadow-md hover:shadow-emerald-500/20 transition-all transform hover:-translate-y-0.5 active:translate-y-0"
                         >
                             <span className="text-sm animate-bounce">📢</span>
-                            <span>Vendo, Troco, Empresto? <strong className="underline font-extrabold">Anuncie aqui: (18) 99726-1236</strong></span>
+                            <span>Conecte seu anúncio a quem procura. <strong className="underline font-extrabold">Anuncie aqui: (18) 99726-1236</strong></span>
                         </a>
 
                     </div>
