@@ -96,8 +96,11 @@ export default function LandingPage() {
                         >
                             <span className="text-sm animate-bounce">📢</span>
                             <span>
-                                Conecte seu anúncio a quem procura.{' '}
-                                <strong className="underline font-extrabold">Anuncie: (18) 99726-1236</strong>
+                                Anuncie seus produtos aqui{' '}
+                                <strong className="underline font-extrabold">
+                                    <span className="inline-block text-base animate-bounce mr-1 align-middle">👉</span>
+                                    XANDÃO: (18) 99726-1236
+                                </strong>
                             </span>
                         </a>
                     </div>
