@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Catálogo de Ofertas",
-  description: "Ofertas e imóveis em um único lugar, sem burocracia.",
+  description: "Ofertas da sua cidade em um único lugar, sem burocracia.",
 };
 
 export default function RootLayout({

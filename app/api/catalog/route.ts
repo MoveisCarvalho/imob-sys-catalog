@@ -2,9 +2,48 @@ import { NextResponse } from 'next/server';
 import dbConnect from '../../../lib/dbConnect';
 import { Tenant, Offer } from '../../../models/Schemas';
 
-// Função auxiliar para escapar caracteres especiais de Regex (como parênteses, pontos, etc)
+// Função auxiliar para escapar caracteres especiais em expressões regulares
 function escapeRegExp(string: string) {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// Função flexível para validar se o anúncio está ativo e dentro do prazo
+function isOfferValid(offer: any): boolean {
+    // 1. Se estiver marcado explicitamente como inativo, descarta
+    if (offer.isActive === false) return false;
+
+    // 2. Se não houver data de expiração definida, o anúncio é permanente
+    if (!offer.expiresAt) return true;
+
+    const raw = offer.expiresAt;
+    let expireDate: Date | null = null;
+
+    if (raw instanceof Date) {
+        expireDate = new Date(raw);
+    } else if (typeof raw === 'string' && raw.trim() !== '') {
+        const trimmed = raw.trim();
+        // Suporte ao formato brasileiro DD/MM/YYYY
+        if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) {
+            const [day, month, year] = trimmed.split('/');
+            expireDate = new Date(Number(year), Number(month) - 1, Number(day), 23, 59, 59, 999);
+        } else {
+            // Suporte ao formato YYYY-MM-DD ou ISO
+            const parsed = new Date(trimmed);
+            if (!isNaN(parsed.getTime())) {
+                expireDate = parsed;
+                // Se for formato apenas de data (YYYY-MM-DD), ajusta para o fim do dia
+                if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+                    expireDate.setHours(23, 59, 59, 999);
+                }
+            }
+        }
+    }
+
+    // Se a data for inválida ou não reconhecida, mantém o anúncio por segurança
+    if (!expireDate) return true;
+
+    // Compara o tempo final do anúncio com a hora atual
+    return expireDate.getTime() >= Date.now();
 }
 
 export async function GET(request: Request) {
@@ -15,7 +54,7 @@ export async function GET(request: Request) {
         const search = searchParams.get('search');
         const cityParam = searchParams.get('city');
 
-        // 1. Busca todas as cidades dos corretores para alimentar o select do frontend
+        // 1. Lista todas as cidades cadastradas nos corretores para alimentar os filtros do front
         const allTenantsForCities = await Tenant.find({}).select('city').lean();
         const citiesList = Array.from(
             new Set(
@@ -26,16 +65,18 @@ export async function GET(request: Request) {
             )
         ).sort((a, b) => a.localeCompare(b));
 
-        let matchQuery: any = {};
         let tenantFilter: any = {};
 
-        // 2. Filtro por cidade nos corretores (Tenants)
+        // 2. Filtro por cidade nos corretores
         if (cityParam && cityParam.trim() !== '') {
             const escapedCity = escapeRegExp(cityParam.trim());
             tenantFilter.city = { $regex: new RegExp(`^${escapedCity}$`, 'i') };
         }
 
-        // 3. Filtro de pesquisa de texto (nome do corretor, título ou descrição do imóvel)
+        // Condição inicial no MongoDB: traz todos os anúncios que NÃO estão explicitamente inativos
+        let matchQuery: any = { isActive: { $ne: false } };
+
+        // 3. Aplicação da busca textual ou por cidade na consulta principal
         if (search && search.trim() !== '') {
             const escapedSearch = escapeRegExp(search.trim());
             const regex = new RegExp(escapedSearch, 'i');
@@ -48,30 +89,35 @@ export async function GET(request: Request) {
             const matchedTenantIds = matchedTenants.map((t: any) => t._id);
 
             matchQuery = {
+                isActive: { $ne: false },
                 $or: [
                     { title: regex },
                     { description: regex },
                     { tenantId: { $in: matchedTenantIds } }
                 ]
             };
-        }
-
-        // Se houver filtro de cidade, mas não busca textual, limita os imóveis àquela cidade
-        if ((!search || search.trim() === '') && (cityParam && cityParam.trim() !== '')) {
+        } else if (cityParam && cityParam.trim() !== '') {
             const cityTenants = await Tenant.find(tenantFilter).select('_id').lean();
             const cityTenantIds = cityTenants.map((t: any) => t._id);
-            matchQuery.tenantId = { $in: cityTenantIds };
+
+            matchQuery = {
+                isActive: { $ne: false },
+                tenantId: { $in: cityTenantIds }
+            };
         }
 
-        // Busca as ofertas filtradas e ORDENA POR DATA DE CRIAÇÃO DECRESCENTE (mais recentes primeiro)
-        const offers = await Offer.find(matchQuery)
+        // Busca os anúncios no banco ordenados por criação
+        const rawOffers = await Offer.find(matchQuery)
             .sort({ createdAt: -1, _id: -1 })
             .lean();
 
-        // Busca os corretores aplicando o filtro de cidade (se ativo) ordenados por nome
+        // Aplica a validação de datas e expiração em memória
+        const offers = rawOffers.filter(isOfferValid);
+
+        // Busca os corretores do filtro
         const tenants = await Tenant.find(tenantFilter).sort({ name: 1 }).lean();
 
-        // Agrupa as ofertas por corretor (mantendo a ordem decrescente das ofertas)
+        // Agrupa anúncios por corretor
         const groupedCatalog = tenants.map((tenant: any) => {
             const tenantOffers = offers.filter((offer: any) =>
                 offer.tenantId && offer.tenantId.toString() === tenant._id.toString()
@@ -86,9 +132,8 @@ export async function GET(request: Request) {
                 websiteLink: tenant.websiteLink || tenant.website || tenant.siteUrl || tenant.site || '',
                 offers: tenantOffers
             };
-        }).filter(group => group.offers.length > 0); // Remove corretores que não têm imóveis correspondentes ao filtro
+        }).filter(group => group.offers.length > 0);
 
-        // Retorna a lista de cidades únicas e o catálogo estruturado
         return NextResponse.json({
             cities: citiesList,
             catalog: groupedCatalog
