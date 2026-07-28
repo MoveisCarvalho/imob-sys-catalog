@@ -3,6 +3,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { TenantGroup } from '@/types/catalog';
 
+// Função utilitária para remover acentos e padronizar textos
+const normalizeText = (text: string = ''): string =>
+    text
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+
 export function useCatalog() {
     const [catalog, setCatalog] = useState<TenantGroup[]>([]);
     const [search, setSearch] = useState('');
@@ -128,18 +135,51 @@ export function useCatalog() {
 
         try {
             setLoading(true);
-            const querySearch = encodeURIComponent(searchTerm.trim());
             const queryCity = encodeURIComponent(cityTerm.trim());
 
-            const url = `/api/catalog?search=${querySearch}&city=${queryCity}`;
+            // Solicitamos todos os dados da cidade (sem filtrar no backend) para podermos
+            // realizar a filtragem refinada de múltiplas palavras no frontend.
+            const url = `/api/catalog?search=&city=${queryCity}`;
             const res = await fetch(url);
             const data = await res.json();
 
+            let rawCatalog: TenantGroup[] = [];
             if (data && typeof data === 'object' && 'catalog' in data) {
-                setCatalog(Array.isArray(data.catalog) ? data.catalog : []);
+                rawCatalog = Array.isArray(data.catalog) ? data.catalog : [];
             } else {
-                setCatalog(Array.isArray(data) ? data : []);
+                rawCatalog = Array.isArray(data) ? data : [];
             }
+
+            // Se não houver busca digitada, exibe o catálogo completo da cidade
+            if (!searchTerm.trim()) {
+                setCatalog(rawCatalog);
+                return;
+            }
+
+            // Separa os termos digitados em palavras individuais (ex: "terrenos casa" -> ["terrenos", "casa"])
+            const searchWords = normalizeText(searchTerm).trim().split(/\s+/);
+
+            // Filtra os cards para garantir que TODAS as palavras existam no card
+            const filteredCatalog = rawCatalog
+                .map((group) => {
+                    const filteredOffers = (group.offers || []).filter((item: any) => {
+                        const itemContent = normalizeText(
+                            `${item.title || ''} ${item.description || ''} ${item.category || ''} ${item.tags?.join(' ') || ''}`
+                        );
+
+                        // Garante que TODAS as palavras buscadas existam no conteúdo
+                        return searchWords.every((word) => itemContent.includes(word));
+                    });
+
+                    return {
+                        ...group,
+                        offers: filteredOffers,
+                    };
+                })
+                // Oculta grupos/anunciantes que não possuem ofertas correspondentes
+                .filter((group) => group.offers && group.offers.length > 0);
+
+            setCatalog(filteredCatalog);
         } catch (err) {
             console.error('Erro ao carregar o catálogo:', err);
         } finally {

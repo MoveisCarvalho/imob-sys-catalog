@@ -10,6 +10,9 @@ interface OfferCardProps {
 
 export const OfferCard: React.FC<OfferCardProps> = ({ offer, onOpenZoom }) => {
     const [currentImgIndex, setCurrentImgIndex] = useState(0);
+    // Estado para controlar a expansão do texto
+    const [isExpanded, setIsExpanded] = useState(false);
+
     const hasImages = offer.images && offer.images.length > 0;
 
     const handlePrev = (e: React.MouseEvent) => {
@@ -22,7 +25,7 @@ export const OfferCard: React.FC<OfferCardProps> = ({ offer, onOpenZoom }) => {
         setCurrentImgIndex((prev) => (prev === offer.images.length - 1 ? 0 : prev + 1));
     };
 
-    // Função para formatar a data ISO do Mongoose para o padrão PT-BR (ex: 23/07/2026)
+    // Função para formatar a data ISO para o padrão PT-BR
     const formatDate = (dateString?: string) => {
         if (!dateString) return null;
         const date = new Date(dateString);
@@ -81,13 +84,40 @@ export const OfferCard: React.FC<OfferCardProps> = ({ offer, onOpenZoom }) => {
             {/* Descrição e Detalhes */}
             <div className="p-6 flex-1 flex flex-col justify-between">
                 <div>
-                    <h3 className="font-serif font-bold text-xl text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition duration-300 mb-2">
+                    {/* Título clicável */}
+                    <h3
+                        onClick={() => setIsExpanded(!isExpanded)}
+                        className="font-serif font-bold text-xl text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition duration-300 mb-2 cursor-pointer select-none"
+                    >
                         {offer.title}
                     </h3>
-                    <p className="text-slate-600 dark:text-slate-300 text-sm line-clamp-3 mb-4 leading-relaxed">
-                        {offer.description}
-                    </p>
+
+                    {/* Bloco de descrição expansível */}
+                    <div
+                        onClick={() => setIsExpanded(!isExpanded)}
+                        className="cursor-pointer group/desc mb-4 select-none"
+                    >
+                        <p className={`text-slate-600 dark:text-slate-300 text-sm leading-relaxed transition-all duration-300 ${isExpanded ? '' : 'line-clamp-3'}`}>
+                            {offer.description}
+                        </p>
+
+                        {/* Botão/Indicador de Expansão */}
+                        <div className="mt-2 text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1">
+                            {isExpanded ? (
+                                <>
+                                    <span>Recolher descrição</span>
+                                    <span>▲</span>
+                                </>
+                            ) : (
+                                <>
+                                    <span>Ler descrição completa</span>
+                                    <span>▼</span>
+                                </>
+                            )}
+                        </div>
+                    </div>
                 </div>
+
                 <div className="pt-4 border-t border-slate-200 dark:border-slate-800/85 flex items-center justify-between text-xs text-slate-400 dark:text-slate-500">
                     {/* Exibição da Data de Publicação PT-BR e ID */}
                     <div className="flex items-center gap-1.5">

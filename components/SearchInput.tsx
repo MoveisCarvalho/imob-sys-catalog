@@ -32,7 +32,7 @@ export function SearchInput({
                 type="text"
                 placeholder={
                     selectedCity
-                        ? 'O que procura? (Ex: Terreno, Piscina, Sobrado...)'
+                        ? 'O que procura? (Ex: Terreno, Lanche, Moto...)'
                         : '⚠️ Selecione primeiro a cidade ao lado ou acima'
                 }
                 className="w-full pl-10 pr-10 py-3 outline-none text-slate-900 dark:text-slate-100 placeholder-slate-400 bg-transparent text-sm rounded-xl focus:bg-slate-50 dark:focus:bg-slate-800/40 transition disabled:cursor-not-allowed"
