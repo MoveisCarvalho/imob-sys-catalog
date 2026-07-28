@@ -25,20 +25,36 @@ export const OfferCard: React.FC<OfferCardProps> = ({ offer, onOpenZoom }) => {
         setCurrentImgIndex((prev) => (prev === offer.images.length - 1 ? 0 : prev + 1));
     };
 
-    // Função para formatar a data ISO para o padrão PT-BR
+    // Função para formatar datas respeitando a data exata do banco (sem desvio de fuso horário local)
     const formatDate = (dateString?: string) => {
         if (!dateString) return null;
-        const date = new Date(dateString);
-        return isNaN(date.getTime())
-            ? null
-            : date.toLocaleDateString('pt-BR', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-            });
+        const trimmed = dateString.trim();
+
+        // Caso já venha no padrão BR DD/MM/YYYY
+        if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) {
+            return trimmed;
+        }
+
+        // Caso venha no padrão simples YYYY-MM-DD
+        if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+            const [year, month, day] = trimmed.split('-');
+            return `${day}/${month}/${year}`;
+        }
+
+        const date = new Date(trimmed);
+        if (isNaN(date.getTime())) return null;
+
+        // timeZone: 'UTC' impede a regressão de 1 dia ocasionada pelo fuso horário do navegador (UTC-3)
+        return date.toLocaleDateString('pt-BR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            timeZone: 'UTC',
+        });
     };
 
-    const formattedDate = formatDate(offer.createdAt);
+    const formattedCreatedDate = formatDate(offer.createdAt);
+    const formattedExpiresDate = formatDate(offer.expiresAt);
 
     return (
         <div className="group flex flex-col bg-slate-50/50 dark:bg-slate-950 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800/80 hover:border-amber-500 dark:hover:border-amber-500 transition-all duration-300">
@@ -118,26 +134,40 @@ export const OfferCard: React.FC<OfferCardProps> = ({ offer, onOpenZoom }) => {
                     </div>
                 </div>
 
-                <div className="pt-4 border-t border-slate-200 dark:border-slate-800/85 flex items-center justify-between text-xs text-slate-400 dark:text-slate-500">
-                    {/* Exibição da Data de Publicação PT-BR e ID */}
-                    <div className="flex items-center gap-1.5">
-                        {formattedDate && (
-                            <>
-                                <span className="font-medium text-slate-500 dark:text-slate-400">
-                                    {formattedDate}
-                                </span>
-                                <span>•</span>
-                            </>
+                {/* Bloco do Rodapé com Datas, ID e Galeria */}
+                <div className="pt-4 border-t border-slate-200 dark:border-slate-800/85 flex items-end justify-between text-xs text-slate-400 dark:text-slate-500">
+                    {/* Esquerda: Datas de Publicação e Validade */}
+                    <div className="flex flex-col gap-1">
+                        {formattedCreatedDate && (
+                            <span className="font-medium text-slate-500 dark:text-slate-400">
+                                Publicado: {formattedCreatedDate}
+                            </span>
                         )}
-                        <span>ID: {offer._id.substring(18)}</span>
+                        <div className="font-medium">
+                            {formattedExpiresDate ? (
+                                <span className="text-amber-600 dark:text-amber-400 font-semibold">
+                                    Validade: {formattedExpiresDate}
+                                </span>
+                            ) : (
+                                <span className="text-slate-400 dark:text-slate-500 italic text-[11px]">
+                                    Validade: Indeterminada
+                                </span>
+                            )}
+                        </div>
                     </div>
 
-                    <button
-                        onClick={() => onOpenZoom(offer.images || [], 0)}
-                        className="text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 font-bold uppercase tracking-wider transition-colors"
-                    >
-                        Ver Galeria ({offer.images?.length || 0})
-                    </button>
+                    {/* Direita: ID e Botão da Galeria */}
+                    <div className="flex flex-col items-end gap-1">
+                        <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                            ID: {offer._id.substring(18)}
+                        </span>
+                        <button
+                            onClick={() => onOpenZoom(offer.images || [], 0)}
+                            className="text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 font-bold uppercase tracking-wider transition-colors"
+                        >
+                            Ver Galeria ({offer.images?.length || 0})
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

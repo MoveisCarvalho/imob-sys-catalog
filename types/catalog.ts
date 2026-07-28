@@ -3,6 +3,7 @@ export interface Offer {
     title: string;
     description: string;
     images: string[];
+    expiresAt?: string;
     createdAt?: string; // Adicionado para receber a data de criação do Mongoose
 }
 
