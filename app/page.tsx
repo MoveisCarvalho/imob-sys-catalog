@@ -38,7 +38,7 @@ export default function LandingPage() {
     } = useCatalog();
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans transition-colors duration-300">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans transition-colors duration-300 relative">
             <style
                 dangerouslySetInnerHTML={{
                     __html: `
@@ -55,6 +55,25 @@ export default function LandingPage() {
                 }}
             />
 
+            {/* BOTÃO FLUTUANTE DE TEMA COM TOOLTIP */}
+            <div className="fixed bottom-6 right-6 md:bottom-8 md:right-8 z-50">
+                <div className="relative group flex items-center justify-center">
+                    {/* TOOLTIP SEM EFEITO MOLA */}
+                    <div className="absolute bottom-full right-0 mb-3 hidden group-hover:flex group-active:flex flex-col items-end pointer-events-none whitespace-nowrap z-50">
+                        <div className="bg-slate-900/95 dark:bg-slate-100/95 text-slate-100 dark:text-slate-900 text-xs font-bold py-1.5 px-3 rounded-xl shadow-2xl border border-slate-700/50 dark:border-slate-300/50 tracking-wide backdrop-blur-sm">
+                            <span>🌗 Alternar para Modo {theme === 'dark' ? 'Claro' : 'Escuro'}</span>
+                        </div>
+                        {/* Seta do Tooltip */}
+                        <div className="w-2 h-2 bg-slate-900/95 dark:bg-slate-100/95 rotate-45 -mt-1 mr-4 border-r border-b border-slate-700/50 dark:border-slate-300/50"></div>
+                    </div>
+
+                    {/* ÍCONE FLUTUANTE DO TEMA */}
+                    <div className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 p-3.5 rounded-full shadow-2xl border border-slate-200 dark:border-slate-700 hover:scale-105 active:scale-95 transition-transform cursor-pointer flex items-center justify-center">
+                        <ThemeToggle theme={theme} onToggle={toggleTheme} />
+                    </div>
+                </div>
+            </div>
+
             {/* BANNER COM AVISO DE RESPONSABILIDADE JURÍDICA */}
             <NoticeBanner />
 
@@ -68,8 +87,6 @@ export default function LandingPage() {
                             : `linear-gradient(to bottom, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.97)), url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1920&q=80')`,
                 }}
             >
-                <ThemeToggle theme={theme} onToggle={toggleTheme} />
-
                 <div className="relative z-10 w-full max-w-4xl mx-auto px-4 text-center flex flex-col gap-2.5">
                     {/* LINHA SUPERIOR */}
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-b border-slate-200/40 dark:border-slate-800/40 pb-2">
@@ -107,9 +124,9 @@ export default function LandingPage() {
 
                     {/* BARRA DE PESQUISA COMBINADA */}
                     <div className="w-full bg-white dark:bg-slate-900 rounded-2xl shadow-lg dark:shadow-2xl p-2 border border-slate-200 dark:border-slate-800 transition-all relative">
-                        {/* BANNER DE CARREGAMENTO DAS CIDADES */}
+                        {/* BANNER DE CARREGAMENTO DAS CIDADES (AGORA ABAIXO DA BARRA SEM SOBREPOR) */}
                         {isCitiesLoading && (
-                            <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-slate-950 font-black text-xs px-5 py-1.5 rounded-full shadow-xl border border-amber-300 flex items-center gap-2 animate-pulse z-30 whitespace-nowrap">
+                            <div className="absolute top-full mt-2.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-slate-950 font-black text-xs px-5 py-1.5 rounded-full shadow-xl border border-amber-300 flex items-center gap-2 animate-pulse z-30 whitespace-nowrap">
                                 <svg className="animate-spin h-4 w-4 text-slate-950" fill="none" viewBox="0 0 24 24">
                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -118,9 +135,9 @@ export default function LandingPage() {
                             </div>
                         )}
 
-                        {/* BANNER DE CARREGAMENTO DO CATÁLOGO DE OFERTAS */}
+                        {/* BANNER DE CARREGAMENTO DO CATÁLOGO DE OFERTAS (AGORA ABAIXO DA BARRA SEM SOBREPOR) */}
                         {loading && !isCitiesLoading && (
-                            <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-amber-500 text-slate-950 font-bold text-xs px-4 py-1.5 rounded-full shadow-lg flex items-center gap-2 animate-bounce z-20">
+                            <div className="absolute top-full mt-2.5 left-1/2 -translate-x-1/2 bg-amber-500 text-slate-950 font-bold text-xs px-4 py-1.5 rounded-full shadow-lg flex items-center gap-2 animate-bounce z-20 whitespace-nowrap">
                                 <svg className="animate-spin h-3.5 w-3.5 text-slate-950" fill="none" viewBox="0 0 24 24">
                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
