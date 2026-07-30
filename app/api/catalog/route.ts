@@ -8,6 +8,7 @@ function escapeRegExp(string: string) {
 }
 
 // Função flexível para validar se o anúncio está ativo e dentro do prazo
+// Função flexível para validar se o anúncio está ativo e dentro do prazo
 function isOfferValid(offer: any): boolean {
     // 1. Se estiver marcado explicitamente como inativo, descarta
     if (offer.isActive === false) return false;
@@ -20,21 +21,21 @@ function isOfferValid(offer: any): boolean {
 
     if (raw instanceof Date) {
         expireDate = new Date(raw);
+        expireDate.setUTCHours(23, 59, 59, 999);
     } else if (typeof raw === 'string' && raw.trim() !== '') {
         const trimmed = raw.trim();
         // Suporte ao formato brasileiro DD/MM/YYYY
         if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) {
             const [day, month, year] = trimmed.split('/');
-            expireDate = new Date(Number(year), Number(month) - 1, Number(day), 23, 59, 59, 999);
+            expireDate = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day), 23, 59, 59, 999));
+        } else if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+            const [year, month, day] = trimmed.split('-');
+            expireDate = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day), 23, 59, 59, 999));
         } else {
-            // Suporte ao formato YYYY-MM-DD ou ISO
+            // Suporte ao formato ISO
             const parsed = new Date(trimmed);
             if (!isNaN(parsed.getTime())) {
-                expireDate = parsed;
-                // Se for formato apenas de data (YYYY-MM-DD), ajusta para o fim do dia
-                if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
-                    expireDate.setHours(23, 59, 59, 999);
-                }
+                expireDate = new Date(Date.UTC(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate(), 23, 59, 59, 999));
             }
         }
     }

@@ -25,7 +25,7 @@ export const OfferCard: React.FC<OfferCardProps> = ({ offer, onOpenZoom }) => {
         setCurrentImgIndex((prev) => (prev === offer.images.length - 1 ? 0 : prev + 1));
     };
 
-    // Função para formatar datas respeitando a data exata do banco (sem desvio de fuso horário local)
+    // Função para formatar datas respeitando o fuso horário local
     const formatDate = (dateString?: string) => {
         if (!dateString) return null;
         const trimmed = dateString.trim();
@@ -44,12 +44,11 @@ export const OfferCard: React.FC<OfferCardProps> = ({ offer, onOpenZoom }) => {
         const date = new Date(trimmed);
         if (isNaN(date.getTime())) return null;
 
-        // timeZone: 'UTC' impede a regressão de 1 dia ocasionada pelo fuso horário do navegador (UTC-3)
+        // Removido o timeZone: 'UTC' para exibir na hora local do dispositivo/navegador
         return date.toLocaleDateString('pt-BR', {
             day: '2-digit',
             month: '2-digit',
             year: 'numeric',
-            timeZone: 'UTC',
         });
     };
 
