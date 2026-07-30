@@ -105,21 +105,32 @@ export default function LandingPage() {
                             </span>
                         )}
 
-                        <a
-                            href="https://wa.me/5518997261236"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 text-white px-3.5 py-1.5 rounded-full text-xs font-bold shadow-md hover:shadow-emerald-500/20 transition-all transform hover:-translate-y-0.5 active:translate-y-0"
-                        >
-                            <span className="text-sm animate-bounce">📢</span>
-                            <span>
-                                Anuncie seus produtos aqui{' '}
-                                <strong className="underline font-extrabold">
-                                    <span className="inline-block text-base animate-bounce mr-1 align-middle">👉</span>
-                                    XANDÃO: (18) 99726-1236
-                                </strong>
-                            </span>
-                        </a>
+                        {/* LINKS LADO A LADO NA MESMA LINHA */}
+                        <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-end">
+                            {/* Botão de Anúncios */}
+                            <a
+                                href="https://imob-sys.vercel.app/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title="Clique para acessar a plataforma de anúncios"
+                                className="inline-flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 px-3.5 py-1.5 rounded-full text-xs font-extrabold shadow-md transition-all transform hover:-translate-y-0.5 active:translate-y-0"
+                            >
+                                <span className="text-sm">📢</span>
+                                <span>Anuncie seus produtos</span>
+                            </a>
+
+                            {/* Botão do WhatsApp Separado */}
+                            <a
+                                href="https://wa.me/5518997261236"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title="Falar via WhatsApp com Xandão"
+                                className="inline-flex items-center gap-1.5 bg-gradient-to-r from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 text-white px-3.5 py-1.5 rounded-full text-xs font-bold shadow-md transition-all transform hover:-translate-y-0.5 active:translate-y-0"
+                            >
+                                <span className="text-sm">💬</span>
+                                <span>XANDÃO: (18) 99726-1236</span>
+                            </a>
+                        </div>
                     </div>
 
                     {/* BARRA DE PESQUISA COMBINADA */}
