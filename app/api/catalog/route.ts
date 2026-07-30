@@ -38,6 +38,36 @@ function isOfferValid(offer: any): boolean {
     return expireDate.getTime() >= Date.now();
 }
 
+// Função corrigida para validar se a assinatura do Tenant está ativa até o final do dia de expiração
+function isTenantSubscriptionValid(tenant: any): boolean {
+    if (!tenant.subscriptionExpiresAt) return true;
+
+    const raw = tenant.subscriptionExpiresAt;
+    let expiryDate: Date | null = null;
+
+    if (raw instanceof Date) {
+        expiryDate = new Date(raw);
+        expiryDate.setUTCHours(23, 59, 59, 999);
+    } else if (typeof raw === 'string' && raw.trim() !== '') {
+        const trimmed = raw.trim();
+        if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) {
+            const [day, month, year] = trimmed.split('/');
+            expiryDate = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day), 23, 59, 59, 999));
+        } else if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+            const [year, month, day] = trimmed.split('-');
+            expiryDate = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day), 23, 59, 59, 999));
+        } else {
+            const parsed = new Date(trimmed);
+            if (!isNaN(parsed.getTime())) {
+                expiryDate = new Date(Date.UTC(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate(), 23, 59, 59, 999));
+            }
+        }
+    }
+
+    if (!expiryDate) return true;
+    return expiryDate.getTime() >= Date.now();
+}
+
 export async function GET(request: Request) {
     await dbConnect();
 
@@ -46,11 +76,13 @@ export async function GET(request: Request) {
         const search = searchParams.get('search');
         const cityParam = searchParams.get('city');
 
-        // 1. Lista todas as cidades cadastradas nos corretores para alimentar os filtros do front
-        const allTenantsForCities = await Tenant.find({}).select('city').lean();
+        // 1. Lista todas as cidades cadastradas nos corretores válidos para alimentar os filtros do front
+        const allTenantsForCities = await Tenant.find({}).lean();
+        const validTenantsForCities = allTenantsForCities.filter(isTenantSubscriptionValid);
+
         const citiesList = Array.from(
             new Set(
-                allTenantsForCities
+                validTenantsForCities
                     .map((t: any) => t.city)
                     .filter((city): city is string => typeof city === 'string' && city.trim() !== '')
                     .map(city => city.trim())
@@ -103,13 +135,16 @@ export async function GET(request: Request) {
             .sort({ createdAt: -1, _id: -1 })
             .lean();
 
-        // Aplica a validação de datas e expiração em memória
+        // Aplica a validação de datas e expiração dos anúncios em memória
         const offers = rawOffers.filter(isOfferValid);
 
-        // Busca os corretores do filtro (sem ordenação alfabética)[cite: 2]
-        const tenants = await Tenant.find(tenantFilter).lean();
+        // Busca os corretores do filtro
+        const rawTenants = await Tenant.find(tenantFilter).lean();
 
-        // Agrupa anúncios por corretor[cite: 2]
+        // 🔥 Filtra apenas os corretores cuja assinatura (subscriptionExpiresAt) está válida até o final do dia
+        const tenants = rawTenants.filter(isTenantSubscriptionValid);
+
+        // Agrupa anúncios por corretor (somente para tenants válidos)
         const groupedCatalog = tenants.map((tenant: any) => {
             const tenantOffers = offers.filter((offer: any) =>
                 offer.tenantId && offer.tenantId.toString() === tenant._id.toString()
@@ -127,7 +162,6 @@ export async function GET(request: Request) {
         }).filter(group => group.offers.length > 0);
 
         // 🔥 ORDENAÇÃO POR DATA DO CARD (INDEPENDENTE DO TENANT):
-        // Ordena os grupos comparando a data de criação (createdAt) do anúncio mais recente de cada um
         groupedCatalog.sort((a, b) => {
             const dateA = a.offers[0]?.createdAt ? new Date(a.offers[0].createdAt).getTime() : 0;
             const dateB = b.offers[0]?.createdAt ? new Date(b.offers[0].createdAt).getTime() : 0;
