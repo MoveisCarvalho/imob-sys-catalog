@@ -8,12 +8,8 @@ function escapeRegExp(string: string) {
 }
 
 // Função flexível para validar se o anúncio está ativo e dentro do prazo
-// Função flexível para validar se o anúncio está ativo e dentro do prazo
 function isOfferValid(offer: any): boolean {
-    // 1. Se estiver marcado explicitamente como inativo, descarta
     if (offer.isActive === false) return false;
-
-    // 2. Se não houver data de expiração definida, o anúncio é permanente
     if (!offer.expiresAt) return true;
 
     const raw = offer.expiresAt;
@@ -24,7 +20,6 @@ function isOfferValid(offer: any): boolean {
         expireDate.setUTCHours(23, 59, 59, 999);
     } else if (typeof raw === 'string' && raw.trim() !== '') {
         const trimmed = raw.trim();
-        // Suporte ao formato brasileiro DD/MM/YYYY
         if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) {
             const [day, month, year] = trimmed.split('/');
             expireDate = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day), 23, 59, 59, 999));
@@ -32,7 +27,6 @@ function isOfferValid(offer: any): boolean {
             const [year, month, day] = trimmed.split('-');
             expireDate = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day), 23, 59, 59, 999));
         } else {
-            // Suporte ao formato ISO
             const parsed = new Date(trimmed);
             if (!isNaN(parsed.getTime())) {
                 expireDate = new Date(Date.UTC(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate(), 23, 59, 59, 999));
@@ -40,10 +34,7 @@ function isOfferValid(offer: any): boolean {
         }
     }
 
-    // Se a data for inválida ou não reconhecida, mantém o anúncio por segurança
     if (!expireDate) return true;
-
-    // Compara o tempo final do anúncio com a hora atual
     return expireDate.getTime() >= Date.now();
 }
 
@@ -107,7 +98,7 @@ export async function GET(request: Request) {
             };
         }
 
-        // Busca os anúncios no banco ordenados por criação
+        // Busca os anúncios no banco ordenados por criação globalmente (do mais recente para o mais antigo)
         const rawOffers = await Offer.find(matchQuery)
             .sort({ createdAt: -1, _id: -1 })
             .lean();
@@ -115,10 +106,10 @@ export async function GET(request: Request) {
         // Aplica a validação de datas e expiração em memória
         const offers = rawOffers.filter(isOfferValid);
 
-        // Busca os corretores do filtro
-        const tenants = await Tenant.find(tenantFilter).sort({ name: 1 }).lean();
+        // Busca os corretores do filtro (sem ordenação alfabética)[cite: 2]
+        const tenants = await Tenant.find(tenantFilter).lean();
 
-        // Agrupa anúncios por corretor
+        // Agrupa anúncios por corretor[cite: 2]
         const groupedCatalog = tenants.map((tenant: any) => {
             const tenantOffers = offers.filter((offer: any) =>
                 offer.tenantId && offer.tenantId.toString() === tenant._id.toString()
@@ -134,6 +125,14 @@ export async function GET(request: Request) {
                 offers: tenantOffers
             };
         }).filter(group => group.offers.length > 0);
+
+        // 🔥 ORDENAÇÃO POR DATA DO CARD (INDEPENDENTE DO TENANT):
+        // Ordena os grupos comparando a data de criação (createdAt) do anúncio mais recente de cada um
+        groupedCatalog.sort((a, b) => {
+            const dateA = a.offers[0]?.createdAt ? new Date(a.offers[0].createdAt).getTime() : 0;
+            const dateB = b.offers[0]?.createdAt ? new Date(b.offers[0].createdAt).getTime() : 0;
+            return dateB - dateA; // Ordem decrescente: do mais recente para o mais antigo
+        });
 
         return NextResponse.json({
             cities: citiesList,
