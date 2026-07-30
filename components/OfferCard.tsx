@@ -25,7 +25,7 @@ export const OfferCard: React.FC<OfferCardProps> = ({ offer, onOpenZoom }) => {
         setCurrentImgIndex((prev) => (prev === offer.images.length - 1 ? 0 : prev + 1));
     };
 
-    // Função para formatar datas respeitando o fuso horário local
+    // Função corrigida para extração direta da data ISO, evitando o recuo de fuso horário
     const formatDate = (dateString?: string) => {
         if (!dateString) return null;
         const trimmed = dateString.trim();
@@ -35,20 +35,22 @@ export const OfferCard: React.FC<OfferCardProps> = ({ offer, onOpenZoom }) => {
             return trimmed;
         }
 
-        // Caso venha no padrão simples YYYY-MM-DD
-        if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
-            const [year, month, day] = trimmed.split('-');
+        // Extrai diretamente o Ano, Mês e Dia de strings ISO (ex: 2026-07-30T...) 
+        // ou formato YYYY-MM-DD, ignorando totalmente deslocamentos de fuso horário.
+        const isoMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (isoMatch) {
+            const [, year, month, day] = isoMatch;
             return `${day}/${month}/${year}`;
         }
 
         const date = new Date(trimmed);
         if (isNaN(date.getTime())) return null;
 
-        // Removido o timeZone: 'UTC' para exibir na hora local do dispositivo/navegador
         return date.toLocaleDateString('pt-BR', {
             day: '2-digit',
             month: '2-digit',
             year: 'numeric',
+            timeZone: 'UTC',
         });
     };
 
